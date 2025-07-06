@@ -14,6 +14,9 @@ export class RegisterUserValidator extends BaseValidator {
     !this.validateEmail(this.request.email) &&
       errors.push("Invalid email format");
 
+    !this.validatePassword(this.request.password) &&
+      errors.push("Invalid password format");
+
     return errors;
   }
 }

@@ -11,6 +11,8 @@ export class UpdateViewCountValidator extends BaseValidator {
   parseRequest(): String[] {
     const errors: string[] = [];
 
+    !this.validateId(this.request.file_id) && errors.push("Invalid file id");
+
     return errors;
   }
 }
