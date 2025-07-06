@@ -8,7 +8,7 @@ import { updateViewCountController } from "../use_cases/file/update_view_count";
 
 export const filesRouter = express.Router();
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ limits: { fileSize: 500 * 1024 * 1024 } });
 
 filesRouter.get("/", authenticate, getAllFileController.execute());
 filesRouter.post(
