@@ -91,4 +91,18 @@ export class BaseValidator {
     }
     return true;
   }
+
+  validateEnum(value: string, enumValues: string[]): Boolean {
+    if (value == undefined) {
+      return false;
+    } else if (typeof value !== "string") {
+      return false;
+    } else if (value.length === 0) {
+      return false;
+    } else if (!enumValues.includes(value)) {
+      return false;
+    } else {
+      return true;
+    }
+  }
 }
