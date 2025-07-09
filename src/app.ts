@@ -17,7 +17,7 @@ const app: Application = express();
 
 app.use(
   cors({
-    origin: "*",
+    origin: process.env.LIVE_URL,
   })
 );
 
