@@ -1,34 +1,37 @@
-﻿# Multimedia Upload Backend
+﻿# File Sharing System Backend
 
-A production-ready Node.js backend service for secure multimedia file management with JWT authentication, cloud storage integration, and comprehensive API documentation.
+A production-ready Node.js backend service for secure file sharing, bulk uploads, and audit logging. Features AWS S3 storage, granular permission controls, and unique link generation.
 
 ## Overview
 
-This backend provides a complete solution for handling multimedia files including images, videos, audio, and PDFs. Built with modern security practices and scalable architecture, it offers user authentication, file management, and robust API endpoints for seamless integration with frontend applications.
+This backend is a comprehensive file-sharing platform. It allows users to upload multiple files to AWS S3, share them via email (granular permissions) or public links, and tracks all access via an audit log.
 
 ## Key Features
 
-### Authentication & Security
+### 🔐 Authentication & Security
 
-- JWT-based user authentication system
-- Protected routes with Bearer token validation
-- Secure password handling and user management
-- CORS configuration for cross-origin requests
+- **JWT-based Authentication**: Secure user login and registration.
+- **Granular Permissions**: File owners can share access with specific users via email.
+- **Protected Routes**: Middleware (`canAccessFile`) ensures only authorized users (owners or explicitly shared users) can access specific files.
 
-### File Management
+### 📂 File Management
 
-- Multi-format file upload support (images, videos, audio, PDFs)
-- Cloudinary integration for reliable cloud storage
-- MIME type validation and security filtering
-- File search, filtering, and sorting capabilities
-- View count tracking and analytics
+- **AWS S3 Integration**: Secure, scalable object storage replacing Cloudinary.
+- **Bulk Uploads**: Support for uploading up to 10 files simultaneously.
+- **Metadata Management**: Stores original filenames, MIME types, and S3 keys.
+- **Search & Filter**: Find files by name, tag, or type.
 
-### Developer Experience
+### 🔗 Sharing & Collaboration
 
-- Interactive Swagger UI documentation
-- Environment-based configuration
-- Comprehensive error handling
-- Clean, maintainable codebase structure
+- **Email Sharing**: Grant specific users "View" access to your files.
+- **Link Sharing**: Generate unique, shareable links (`/api/shared/:token`) for easy distribution.
+- **Audit Logging**: Automatically logs "VIEW" events whenever a shared file is accessed, tracking who accessed what and when.
+
+### 🛠 Developer Experience
+
+- **Request Validation**: Robust request parsing and error handling.
+- **Clean Architecture**: Separation of concerns (Controllers, Use Cases, Queries).
+- **TypeScript**: Type-safe codebase.
 
 ## Technology Stack
 
@@ -37,10 +40,9 @@ This backend provides a complete solution for handling multimedia files includin
 | Runtime        | Node.js                   |
 | Framework      | Express.js                |
 | Database       | MongoDB with Mongoose ODM |
-| Cloud Storage  | Cloudinary                |
+| Cloud Storage  | **AWS S3**                |
 | Authentication | JSON Web Tokens (JWT)     |
-| Documentation  | Swagger UI                |
-| Code Quality   | ESLint + Prettier         |
+| Language       | TypeScript                |
 
 ## Getting Started
 
@@ -48,7 +50,7 @@ This backend provides a complete solution for handling multimedia files includin
 
 - Node.js (v14 or higher)
 - MongoDB instance (local or cloud)
-- Cloudinary account
+- AWS Account with S3 Bucket access
 
 ### Installation
 
@@ -66,16 +68,18 @@ This backend provides a complete solution for handling multimedia files includin
    ```
 
 3. **Environment Configuration**
-
    Create a `.env` file in the root directory:
 
    ```env
    PORT=8080
    MONGO_URI=mongodb://localhost:27017/multimedia-db
    JWT_SECRET=your-super-secret-jwt-key
-   CLOUDINARY_NAME=your-cloudinary-cloud-name
-   CLOUDINARY_API_KEY=your-cloudinary-api-key
-   CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+
+   # AWS S3 Configuration
+   AWS_ACCESS_KEY_ID=your-aws-access-key
+   AWS_SECRET_ACCESS_KEY=your-aws-secret-key
+   AWS_REGION=your-bucket-region
+   AWS_BUCKET_NAME=your-bucket-name
    ```
 
 4. **Start the development server**
@@ -87,132 +91,67 @@ The server will be available at `http://localhost:8080/api`
 
 ## API Documentation
 
-### Interactive Documentation
+### Authentication
 
-Access the complete API documentation with interactive testing capabilities at:
-**`http://localhost:8080/api-docs`**
+All protected routes require `Authorization: Bearer <token>`.
 
-For protected endpoints, click the "Authorize" button and enter your Bearer token.
+#### 1. Upload Files (Bulk)
 
-### Authentication Endpoints
+**POST** `/files/upload`
 
-#### Register User
+- Body (FormData): `documents` (Files, max 10), `tags` (JSON string)
+- Uploads files to S3 and creates DB records.
 
-- **POST** `/auth/register`
-- Creates a new user account
-- **Body**: `{ "username": "string", "email": "string", "password": "string" }`
+#### 2. Share File (Email)
 
-#### User Login
+**POST** `/files/:id/share`
 
-- **POST** `/auth/login`
-- Authenticates user and returns JWT token
-- **Body**: `{ "email": "string", "password": "string" }`
+- Body: `{ "email": "user@example.com" }`
+- Grants the user with this email access to the file.
 
-### File Management Endpoints
+#### 3. Generate Link
 
-#### Upload File
+**POST** `/files/:id/link`
 
-- **POST** `/files/create`
-- **Authentication**: Required
-- **Content-Type**: `multipart/form-data`
-- **Form Data**:
-  - `file`: Binary file data
-  - `tags`: Array of string tags (optional)
+- Returns: `{ "url": "..." }`
+- Generates a unique token for public/shared access.
 
-#### List Files
+#### 4. Access Shared File
 
-- **GET** `/files`
-- **Query Parameters**:
-  - `search`: Search by filename
-  - `sort`: Sort by `size`, `created_at`, `viewCount`
-  - `filter`: Filter by file type, e.g., `image`, `video`, `audio`, `pdf`
+**GET** `/shared/:token`
 
-#### Delete File
+- Access a file using the generated token.
+- **Audit Log**: Limits and logs this action as a "VIEW" event.
 
-- **DELETE** `/files/delete`
-- **Authentication**: Required
-- **Query Parameters**: `file_id`
+#### 5. List Files
 
-#### Update View Count
+**GET** `/files`
 
-- **GET** `/files/update_view_count`
-- **Authentication**: Required
-- **Query Parameters**: `file_id`
+- Query Params: `search`, `filter` (type), `sort`
+- Lists files owned by the current user.
 
-### Example Request
+#### 6. Delete File
 
-```bash
-curl -X POST http://localhost:8080/api/files/create \
-  -H "Authorization: Bearer your_jwt_token_here" \
-  -F "file=@/path/to/your/file.jpg" \
-  -F "tags=nature,photography"
-```
+**DELETE** `/files/delete`
 
-## Development
+- Body: `{ "file_id": "..." }`
+- Permanently deletes file metadata (S3 deletion logic customizable).
 
-### Code Quality
+#### 7. Update View Count
 
-Maintain code quality with built-in linting and formatting:
+**PATCH** `/files/update_view_count`
 
-```bash
-# Run ESLint
-npm run lint
-
-# Format code with Prettier
-npm run format
-```
-
-## Production Deployment
-
-### Environment Variables
-
-Ensure all production environment variables are properly configured:
-
-- Use strong, unique JWT secrets
-- Configure production MongoDB URI
-- Set up Cloudinary production credentials
-- Configure appropriate CORS origins
-
-### Security Considerations
-
-- Enable HTTPS in production
-- Implement rate limiting
-- Configure proper CORS policies
-- Regular security audits and updates
-
-## Roadmap
-
-### Upcoming Features
-
-- **Pagination**: Implement cursor-based pagination for large file lists
-- **Rate Limiting**: Add request throttling for API endpoints
-- **File Versioning**: Support for file version management
-- **Admin Panel**: Administrative interface for file moderation
-- **Public/Private Files**: User-controlled file visibility settings
-- **Advanced Search**: Full-text search capabilities
-- **File Compression**: Automatic image optimization
-- **Batch Operations**: Multiple file upload and management
-
-### Performance Enhancements
-
-- Redis caching integration
-- Database query optimization
-- CDN integration for faster file delivery
-- Background job processing for heavy operations
+- Query: `file_id`
+- Manually increments view count and logs activity.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Fork the repo.
+2. Create your feature branch (`git checkout -b feature/amazing-feature`).
+3. Commit your changes.
+4. Push to the branch.
+5. Open a Pull Request.
 
 ## License
 
 This project is licensed under the MIT License.
-
----
-
-**Ready to get started?** Follow the installation guide above and check out the interactive API documentation to explore all available endpoints!
-# multimedia-upload-backend
