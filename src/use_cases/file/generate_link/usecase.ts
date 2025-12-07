@@ -26,7 +26,7 @@ export class GenerateLinkUseCase {
 
     const baseUrl = process.env.LIVE_URL || "http://localhost:3000"; // Assuming frontend or API url
     // If it's API serving:
-    const url = `${baseUrl}/api/shared/${token}`;
+    const url = `${baseUrl}/shared/${token}`;
 
     return { url };
   }
