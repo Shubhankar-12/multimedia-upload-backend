@@ -2,6 +2,7 @@ import { IFile } from "../../../db/files";
 import { fileQueries, userQueries } from "../../../db/queries";
 import { ErrorResponse, ResponseLocalAuth } from "../../../types/all_types";
 import { CreateFileDto } from "./dto";
+import { v4 as uuidv4 } from "uuid";
 
 type UseCaseRequest = {
   request: CreateFileDto;
@@ -35,6 +36,7 @@ export class CreateFileUseCase {
         type: file.mimetype, // Legacy
         tags: request.tags,
         shared_with: [],
+        share_link_token: uuidv4(),
       };
 
       const resp = await fileQueries.createFile(newFile);
