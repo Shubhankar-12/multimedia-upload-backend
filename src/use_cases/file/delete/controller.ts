@@ -15,7 +15,10 @@ export class DeleteFileController {
 
   async handle(req: Request, res: Response): Promise<void> {
     try {
-      const requestData = req.query as unknown as DeleteFileRequest;
+      const requestData =
+        req.body && req.body.file_id
+          ? req.body
+          : (req.query as unknown as DeleteFileRequest);
       // Validate Request
       const validator = new DeleteFileValidator(requestData);
       const errors = validator.parseRequest();

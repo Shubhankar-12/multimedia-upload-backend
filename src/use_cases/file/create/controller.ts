@@ -17,7 +17,7 @@ export class CreateFileController {
     try {
       const requestData: CreateFileRequest = {
         ...req.body,
-        ...req.file,
+        files: req.files as any,
       };
       console.log("requestData", req.body.tags);
 

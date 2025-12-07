@@ -1,13 +1,18 @@
 import { Document } from "mongoose";
 
 export interface IFile {
-  user_id: string;
+  user_id: string; // or Types.ObjectId
   file_id: string;
   name: string;
-  url: string;
+  originalName: string;
+  s3_key: string;
+  url?: string;
   size: number;
-  type: string;
+  mimeType: string;
+  type?: string;
   tags: string[];
+  shared_with: string[]; // Array of User IDs
+  share_link_token?: string;
   viewCount: number;
   created_at: Date;
   updated_at: Date;

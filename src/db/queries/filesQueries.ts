@@ -117,4 +117,25 @@ export class FileQueries {
 
     return await this.fileModel.aggregate(aggregateQuery);
   };
+  getFileById = async (fileId: string): Promise<any> => {
+    return await this.fileModel.findById(new ObjectId(fileId));
+  };
+
+  addSharedUser = async (fileId: string, userId: string): Promise<any> => {
+    return await this.fileModel.updateOne(
+      { _id: new ObjectId(fileId) },
+      { $addToSet: { shared_with: new ObjectId(userId) } }
+    );
+  };
+
+  setShareLinkToken = async (fileId: string, token: string): Promise<any> => {
+    return await this.fileModel.updateOne(
+      { _id: new ObjectId(fileId) },
+      { $set: { share_link_token: token } }
+    );
+  };
+
+  getFileByToken = async (token: string): Promise<any> => {
+    return await this.fileModel.findOne({ share_link_token: token });
+  };
 }

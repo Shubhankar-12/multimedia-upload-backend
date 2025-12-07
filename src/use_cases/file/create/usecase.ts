@@ -1,8 +1,6 @@
-import { Readable } from "stream";
 import { IFile } from "../../../db/files";
 import { fileQueries, userQueries } from "../../../db/queries";
 import { ErrorResponse, ResponseLocalAuth } from "../../../types/all_types";
-import cloudinary from "../../../utils/cloudinary";
 import { CreateFileDto } from "./dto";
 
 type UseCaseRequest = {
@@ -14,55 +12,37 @@ export class CreateFileUseCase {
   async execute({
     request,
     auth,
-  }: UseCaseRequest): Promise<IFile | ErrorResponse> {
+  }: UseCaseRequest): Promise<IFile[] | ErrorResponse> {
     const token = auth.token;
     if (!token) return { error: "Not authenticated" };
 
     const userId = auth.decodedToken.user_id;
 
-    if (!request.buffer) return { error: "No file found" };
-    if (request.size > 100_000_000)
-      return { error: "File size should be less than 100MB" };
+    if (!request.files || request.files.length === 0)
+      return { error: "No files found" };
 
-    // Convert buffer to stream and upload to Cloudinary
-    const result = await new Promise<any>((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        { resource_type: "auto" },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
+    const createdFiles: IFile[] = [];
 
-      const stream = Readable.from(request.buffer);
-      stream.pipe(uploadStream);
-    });
-
-    const newFile = {
-      user_id: userId,
-      name: request.originalname,
-      url: result.secure_url,
-      size: request.size,
-      type: request.mimetype,
-      tags: request.tags,
-    };
-
-    const resp = await fileQueries.createFile(newFile);
-
-    if (resp)
-      return {
-        file_id: resp._id,
-        name: resp.name,
-        url: resp.url,
-        size: resp.size,
-        type: resp.type,
-        tags: resp.tags,
-        viewCount: resp.viewCount,
-        created_at: resp.created_at,
-        updated_at: resp.updated_at,
-        user_id: resp.user_id,
+    for (const file of request.files) {
+      const newFile = {
+        user_id: userId,
+        name: file.originalname,
+        originalName: file.originalname, // Required by new schema
+        s3_key: file.key, // Required by new schema
+        mimeType: file.mimetype, // Required by new schema
+        url: file.location,
+        size: file.size,
+        type: file.mimetype, // Legacy
+        tags: request.tags,
+        shared_with: [],
       };
 
-    return { error: "Error creating file" };
+      const resp = await fileQueries.createFile(newFile);
+      if (resp) {
+        createdFiles.push(resp);
+      }
+    }
+
+    return createdFiles;
   }
 }
