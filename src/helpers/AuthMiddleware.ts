@@ -26,6 +26,7 @@ export const authenticate = async (
       return;
     }
 
+    req.user = user;
     next();
   } catch {
     res.status(401).json({ message: "Invalid token, please login again" });
